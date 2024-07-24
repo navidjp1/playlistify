@@ -6,7 +6,8 @@ export async function POST(request: Request) {
     const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
     const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
 
-    const scope = "user-read-private user-read-email";
+    const scope =
+        "user-read-private user-read-email playlist-read-private playlist-modify-private playlist-modify-public";
 
     // generated in the previous step
     const codeVerifier = generateRandomString(64);
