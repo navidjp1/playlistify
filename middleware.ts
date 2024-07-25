@@ -1,20 +1,20 @@
-import { access } from "fs";
 import { NextRequest, NextResponse } from "next/server";
-import { getAccessToken, updateTokens, getRefreshToken, deleteAccessToken } from "@/lib";
+import { checkLoggedIn, updateTokens, getRefreshToken, deleteAccessToken } from "@/lib";
 
 export default async function middleware(request: NextRequest) {
     let res = NextResponse.next();
 
     // res = await deleteAccessToken(res);
 
-    const access_token = await getAccessToken();
-    if (!access_token) {
+    const isLoggedIn = await checkLoggedIn();
+    if (!isLoggedIn) {
         const refresh_token_cookie = await getRefreshToken();
         if (!refresh_token_cookie) {
             res.headers.set("x-error-message", "not logged in");
+        } else {
+            const refresh_token = refresh_token_cookie.refresh_token;
+            res = await updateTokens(refresh_token, res);
         }
-        const refresh_token = refresh_token_cookie.refresh_token;
-        res = await updateTokens(refresh_token, res);
     }
 
     const error = res.headers.get("x-error-message");
@@ -32,5 +32,11 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/merge", "/clean", "/sort", "/split", "/generate"],
+    matcher: [
+        "/functions/merge",
+        "/functions/clean",
+        "/functions/sort",
+        "/functions/split",
+        "/functions/generate",
+    ],
 };

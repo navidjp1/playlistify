@@ -1,8 +1,6 @@
-require("dotenv").config();
-import { NextResponse } from "next/server";
 import querystring from "querystring";
 
-export async function POST(request: Request) {
+export default async function createAuthUrl() {
     const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
     const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
 
@@ -26,12 +24,14 @@ export async function POST(request: Request) {
     const authUrl = `https://accounts.spotify.com/authorize?${querystring.stringify(
         params
     )}`;
-    return NextResponse.json({ authUrl, codeVerifier });
+
+    window.localStorage.setItem("code_verifier", codeVerifier);
+
+    return authUrl;
 }
 
 const generateRandomString = (length: number) => {
-    const possible =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     const values = crypto.getRandomValues(new Uint8Array(length));
     return values.reduce((acc, x) => acc + possible[x % possible.length], "");
 };

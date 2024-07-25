@@ -1,37 +1,37 @@
 "use client";
-import axios from "axios";
 import { Card, CardBody, CardFooter, Image } from "@nextui-org/react";
+import createAuthUrl from "@/utils/authUrl";
 
 const Home: React.FC = () => {
     const pages = [
         {
             title: "Merge",
             // img: "/images/fruit-1.jpeg",
-            href: "/merge",
+            href: "/functions/merge",
             description: "Merge your different playlists",
         },
         {
             title: "Clean",
             // img: "/images/fruit-2.jpeg",
-            href: "/clean",
+            href: "/functions/clean",
             description: "Replace/remove explicit songs",
         },
         {
             title: "Sort",
             // img: "/images/fruit-3.jpeg",
-            href: "/sort",
+            href: "/functions/sort",
             description: "Sort playlists by different criteria",
         },
         {
             title: "Split",
             // img: "/images/fruit-4.jpeg",
-            href: "/split",
+            href: "/functions/split",
             description: "Split up a playlist into more than one",
         },
         {
             title: "Generate",
             // img: "/images/fruit-5.jpeg",
-            href: "/generate",
+            href: "/functions/generate",
             description: "Create playlists based on your interests",
         },
         {
@@ -42,22 +42,16 @@ const Home: React.FC = () => {
         },
     ];
 
-    const handleLogin = async () => {
-        await axios
-            .post("http://localhost:3000/api/spotify_auth")
-            .then((result) => {
-                const { authUrl, codeVerifier } = result.data;
-                window.localStorage.setItem("code_verifier", codeVerifier);
-                window.location.href = authUrl;
-            })
-            .catch((err) => console.log(err));
+    const authorizeUser = async () => {
+        const authUrl = await createAuthUrl();
+        window.location.href = authUrl;
     };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen py-2">
             <h1 className="text-4xl font-bold">Welcome</h1>
             <button
-                onClick={handleLogin}
+                onClick={authorizeUser}
                 className="mt-4 px-4 py-2 bg-green-500 text-white rounded"
             >
                 Login with Spotify

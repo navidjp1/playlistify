@@ -1,7 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { useSearchParams, redirect } from "next/navigation";
-import axios from "axios";
+import { useSearchParams } from "next/navigation";
 
 export default function Callback() {
     const searchParams = useSearchParams();
@@ -15,17 +14,19 @@ export default function Callback() {
             callFunction = false;
             // Code exists, exchange it for an access token
             try {
-                const codeVerifier =
-                    window.localStorage.getItem("code_verifier");
-                const response = await axios.post("/api/callback", {
-                    code,
-                    codeVerifier,
+                const codeVerifier = window.localStorage.getItem("code_verifier");
+                const response = await fetch("/api/set_tokens", {
+                    method: "POST",
+                    body: JSON.stringify({ code, codeVerifier }),
                 });
-                if (response.data != "Success") {
-                    console.error(response.data);
+                const data = await response.json();
+                if (data.message != "success") {
+                    console.error(data.message);
                     // redirect to error page.
+                } else {
+                    window.localStorage.removeItem("code_verifier");
+                    window.location.href = "http://localhost:3000/";
                 }
-                window.location.href = "http://localhost:3000/";
             } catch (err) {
                 console.error("Error exchanging code for token: ", err);
             }
@@ -46,3 +47,46 @@ export default function Callback() {
         </div>
     );
 }
+
+// "use server";
+// import { redirect } from "next/navigation";
+// import { cookies } from "next/headers";
+// import { getCodeVerifier } from "@/lib";
+// import axios from "axios";
+
+// async function handleCallback(searchParams: any) {
+//     const code = searchParams?.code;
+//     const error = searchParams?.error;
+
+//     if (code) {
+//         // Code exists, exchange it for an access token
+//         try {
+//             const codeVerifier = cookies().get("codeVerifier")?.value;
+
+//             const res = await fetch("http://localhost:3000/api/set_tokens", {
+//                 method: "POST",
+//                 body: JSON.stringify({ code, codeVerifier }),
+//             });
+//             console.log(await res.json());
+//         } catch (err) {
+//             console.error("Error exchanging code for token: ", err);
+//         }
+//     } else if (error) {
+//         console.error("Error during authorization: ", error);
+//     }
+//     redirect("/");
+// }
+
+// export default async function Callback({
+//     searchParams,
+// }: {
+//     searchParams?: { [key: string]: string | string[] | undefined };
+// }) {
+//     await handleCallback(searchParams);
+
+//     return (
+//         <div className="flex flex-col items-center justify-center min-h-screen py-2">
+//             <h1 className="text-4xl font-bold">Processing authorization...</h1>
+//         </div>
+//     );
+// }
