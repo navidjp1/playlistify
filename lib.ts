@@ -110,18 +110,3 @@ export async function deleteAccessToken(res: NextResponse) {
     await res.cookies.delete("access_token");
     return res;
 }
-
-// export async function setCodeVerifier(code_verifier: string) {
-//     const codeVerifier = await encrypt({ code_verifier }, "1h");
-
-//     cookies().set("code_verifier", codeVerifier, {
-//         expires: Date.now() + 60 * 1000,
-//     });
-// }
-
-// export async function getCodeVerifier() {
-//     const code_verifier = cookies().get("code_verifier")?.value;
-//     if (!code_verifier) return null;
-//     const code_verifier_cookie = await decrypt(code_verifier);
-//     return code_verifier_cookie.code_verifier;
-// }

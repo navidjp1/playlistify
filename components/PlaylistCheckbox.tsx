@@ -16,10 +16,13 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
     const [selectedPlaylists, setSelectedPlaylists] = useState([]);
 
     const handleSubmit = async () => {
-        console.log(selectedPlaylists);
         if (selectedPlaylists.length > headers.maxSelections) {
-            // user not allowed to select this many playlists
             // prompt user to select less playlists
+            alert(
+                `Too many selections. Select fewer than ${
+                    headers.maxSelections + 1
+                } playlists.`
+            );
             return;
         }
         try {
@@ -45,6 +48,7 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
             console.error("Error sending api call to handle selections: ", error);
             // display error message
         }
+        setSelectedPlaylists([]);
     };
 
     return (
@@ -58,7 +62,7 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
                 {playlists.map((playlist: Playlist) => (
                     <Checkbox
                         key={playlist.id}
-                        value={playlist.id + ": " + playlist.name}
+                        value={JSON.stringify({ id: playlist.id, name: playlist.name })}
                     >
                         {playlist.name}
                     </Checkbox>
