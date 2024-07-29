@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Checkbox, CheckboxGroup, Button } from "@nextui-org/react";
 import { Playlist } from "@/utils/types";
 
@@ -38,16 +38,15 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
             });
 
             const data = await response.json();
+            // window.location.reload();
             if (data.message != "success") {
-                console.error(data.message);
-                // display error message
-            } else {
-                // display success message
+                throw new Error(data.message);
             }
         } catch (error) {
             console.error("Error sending api call to handle selections: ", error);
             // display error message
         }
+        console.log("Success!");
         setSelectedPlaylists([]);
     };
 

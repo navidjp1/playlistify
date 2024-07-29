@@ -1,7 +1,8 @@
 "use server";
 import { NextResponse } from "next/server";
 import { getAccessToken } from "@/utils/getData";
-import { mergePlaylists } from "@/utils/functionHandler";
+import mergePlaylists from "@/utils/functions/merge";
+import cleanPlaylist from "@/utils/functions/clean";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!;
 const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI!;
@@ -19,7 +20,17 @@ export async function POST(request: Request) {
         const headers = {
             Authorization: `Bearer ${access_token}`,
         };
-        await mergePlaylists(playlists, headers);
+
+        switch (functionType) {
+            case "merge":
+                await mergePlaylists(playlists, headers);
+                break;
+            case "clean":
+                await cleanPlaylist(playlists, headers);
+                break;
+            default:
+                console.log("Error: wrong function type inputted");
+        }
 
         return NextResponse.json({ message: "success" });
     } catch (err) {

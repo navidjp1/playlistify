@@ -1,8 +1,10 @@
-import { decrypt } from "@/lib";
+import { decrypt, updateTokens, getRefreshToken } from "@/lib";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function getAccessToken() {
     const encrypted_access_token = await cookies().get("access_token")?.value;
+    if (!encrypted_access_token) return null;
     const access_token_cookie = await decrypt(encrypted_access_token!);
     const access_token = access_token_cookie.access_token;
     return access_token;

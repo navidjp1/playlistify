@@ -8,11 +8,11 @@ export default async function Merge() {
     // await new Promise((resolve) => setTimeout(resolve, 2000));
     let access_token = await getAccessToken();
     const playlists: Array<Playlist> = await getPlaylists(access_token);
-    const headers = { functionType: "merge", maxSelections: 3 };
+    const headers = { functionType: "clean", maxSelections: 1 };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen py-2">
-            <h1 className="text-4xl font-bold">Merge Playlists</h1>
+            <h1 className="text-4xl font-bold">Clean Playlists</h1>
             <br />
             {playlists ? (
                 <PlaylistCheckbox playlists={playlists} headers={headers} />

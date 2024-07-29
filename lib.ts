@@ -16,10 +16,15 @@ export async function encrypt(payload: any, expiration: string) {
 }
 
 export async function decrypt(input: string): Promise<any> {
-    const { payload } = await jwtVerify(input, key, {
-        algorithms: ["HS256"],
-    });
-    return payload;
+    try {
+        const { payload } = await jwtVerify(input, key, {
+            algorithms: ["HS256"],
+        });
+        return payload;
+    } catch (error) {
+        console.error("Error decrypting payload: ", error);
+        return null;
+    }
 }
 
 export async function setTokens(
@@ -109,4 +114,43 @@ export async function getRefreshToken() {
 export async function deleteAccessToken(res: NextResponse) {
     await res.cookies.delete("access_token");
     return res;
+}
+
+export async function testUpdate() {
+    try {
+        const refreshToken = await getRefreshToken();
+        const payload = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+                grant_type: "refresh_token",
+                refresh_token: refreshToken,
+                client_id: CLIENT_ID!,
+            }),
+        };
+        const response = await fetch(TOKEN_URL, payload);
+        const newTokenInfo = await response.json();
+        const access_token = newTokenInfo.access_token;
+        const refresh_token = newTokenInfo.refresh_token;
+        const new_expires_in = newTokenInfo.expires_in;
+
+        const newAccessToken = await encrypt({ access_token }, "1h");
+        const newRefreshToken = await encrypt({ refresh_token }, "30d");
+        await cookies().set("access_token", newAccessToken, {
+            expires: Date.now() + new_expires_in * 1000,
+            httpOnly: true,
+            path: "/",
+        });
+        await cookies().set("refresh_token", newRefreshToken, {
+            expires: Date.now() + 60 * 60 * 24 * 30 * 1000, // 30 days
+            httpOnly: true,
+            path: "/",
+        });
+        return access_token;
+    } catch (err) {
+        console.error("Could not update tokens: ", err);
+        return "update tokens failed";
+    }
 }

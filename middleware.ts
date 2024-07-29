@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkLoggedIn, updateTokens, getRefreshToken, deleteAccessToken } from "@/lib";
+import { checkLoggedIn, updateTokens, getRefreshToken } from "@/lib";
 
 export default async function middleware(request: NextRequest) {
     let res = NextResponse.next();
-
-    // res = await deleteAccessToken(res);
 
     const isLoggedIn = await checkLoggedIn();
     if (!isLoggedIn) {

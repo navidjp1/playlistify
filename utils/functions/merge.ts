@@ -1,4 +1,4 @@
-import { Playlist } from "./types";
+import { Playlist } from "../types";
 
 const API_BASE_URL = "https://api.spotify.com/v1";
 
@@ -7,7 +7,7 @@ type Headers = {
     "Content-Type"?: string;
 };
 
-export async function mergePlaylists(playlists: Playlist[], headers: Headers) {
+export default async function mergePlaylists(playlists: Playlist[], headers: Headers) {
     const songURIs: string[] = [];
 
     for (const playlist of playlists) {
@@ -59,21 +59,40 @@ export async function mergePlaylists(playlists: Playlist[], headers: Headers) {
         });
         const createdPlaylist = await request.json();
         const newPlaylistID = createdPlaylist.id;
+        const url = `${API_BASE_URL}/playlists/${newPlaylistID}/tracks`;
 
-        const req = await fetch(`${API_BASE_URL}/playlists/${newPlaylistID}/tracks`, {
-            method: "POST",
-            headers,
-            body: newBody,
-        });
+        if (songURIs.length > 100) {
+            await handleLargePlaylists(songURIs, url, headers);
+        } else {
+            const req = await fetch(url, { method: "POST", headers, body: newBody });
 
-        const res = await req.json();
-        if (res.error) {
-            console.log(res.error);
-            throw new Error("Spotify API returned error.");
+            const res = await req.json();
+            if (res.error) {
+                console.log(res.error);
+                throw new Error("Spotify API returned error.");
+            }
         }
     } catch (error) {
         console.error("Error merging playlists: ", error);
         return;
     }
     console.log("Successfully merged playlists!");
+}
+
+async function handleLargePlaylists(songURIs: string[], url: string, headers: Headers) {
+    const limit = 100;
+    for (let i = 0; i < songURIs.length; i += limit) {
+        const batch = songURIs.slice(i, i + limit);
+        console.log(batch + "\n NEXT BATCH:");
+
+        // prettier-ignore
+        const body = JSON.stringify({ "uris": batch, "position": 0, });
+
+        const response = await fetch(url, { method: "POST", headers, body });
+
+        if (!response.ok) {
+            console.error("Error adding tracks to playlist: ", await response.json());
+            throw new Error(`Failed to add tracks batch starting at index ${i}`);
+        }
+    }
 }
