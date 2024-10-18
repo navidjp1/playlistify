@@ -105,6 +105,11 @@ export async function checkLoggedIn() {
     return true;
 }
 
+export async function logout() {
+    await cookies().delete("access_token");
+    await cookies().delete("refresh_token");
+}
+
 export async function getRefreshToken() {
     const refresh_token = await cookies().get("refresh_token")?.value;
     if (!refresh_token) return null;

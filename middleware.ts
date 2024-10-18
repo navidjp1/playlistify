@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkLoggedIn, updateTokens, getRefreshToken } from "@/lib";
+import { toast } from "sonner";
 
 export default async function middleware(request: NextRequest) {
     let res = NextResponse.next();
@@ -19,6 +20,7 @@ export default async function middleware(request: NextRequest) {
     if (error) {
         const url = new URL("/", request.url);
         if (error === "not logged in") {
+            toast.error("Please authenticate your account before proceeding.");
             url.searchParams.set("error", "not_logged_in");
         } else {
             url.searchParams.set("error", "system_error");
