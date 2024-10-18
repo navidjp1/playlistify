@@ -17,4 +17,11 @@ export type Playlist = {
     id: string;
     name: string;
     public: boolean;
+    images: ImageObject[];
+};
+
+export type ImageObject = {
+    url: string;
+    height: number;
+    width: number;
 };

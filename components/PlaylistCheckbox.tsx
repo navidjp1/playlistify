@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Checkbox, CheckboxGroup, Button } from "@nextui-org/react";
+import { Card, CardBody, CardFooter, Image } from "@nextui-org/react";
 import { Playlist } from "@/utils/types";
+import { toast } from "sonner";
 
 type PlaylistCheckboxProps = {
     playlists: Playlist[];
@@ -13,7 +15,22 @@ type PlaylistCheckboxProps = {
 };
 
 export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckboxProps) {
-    const [selectedPlaylists, setSelectedPlaylists] = useState([]);
+    const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
+
+    const handleCardPress = async (playlist: Playlist) => {
+        const playlistData = JSON.stringify({
+            id: playlist.id,
+            name: playlist.name,
+        });
+
+        if (selectedPlaylists.includes(playlistData)) {
+            await setSelectedPlaylists(
+                selectedPlaylists.filter((p) => p !== playlistData)
+            );
+        } else {
+            await setSelectedPlaylists([...selectedPlaylists, playlistData]); // Add to selected
+        }
+    };
 
     const handleSubmit = async () => {
         if (selectedPlaylists.length > headers.maxSelections) {
@@ -45,31 +62,56 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
         } catch (error) {
             console.error("Error sending api call to handle selections: ", error);
             // display error message
+            toast.error("There was an error in the system. Please try again later.");
         }
-        console.log("Success!");
+        toast.success(`Successfully ${headers.functionType}d playlists!`);
         setSelectedPlaylists([]);
     };
 
+    const isSelected = (playlist: string) => selectedPlaylists.includes(playlist);
+
     return (
         <div>
-            <CheckboxGroup
-                color="primary"
-                label="Select Playlists"
-                value={selectedPlaylists}
-                onChange={(e: any) => setSelectedPlaylists(e)}
-            >
+            <div className="gap-2 grid grid-cols-6">
                 {playlists.map((playlist: Playlist) => (
-                    <Checkbox
+                    <Card
+                        shadow="sm"
                         key={playlist.id}
-                        value={JSON.stringify({ id: playlist.id, name: playlist.name })}
+                        isPressable
+                        className={`hover:bg-blue-500 justify-center outline-none ${
+                            isSelected(
+                                JSON.stringify({
+                                    id: playlist.id,
+                                    name: playlist.name,
+                                })
+                            )
+                                ? "bg-blue-500"
+                                : ""
+                        }`}
+                        onPress={() => handleCardPress(playlist)}
                     >
-                        {playlist.name}
-                    </Checkbox>
+                        <CardFooter className="text-medium justify-center">
+                            <b>{playlist.name}</b>
+                        </CardFooter>
+                        <CardBody className="">
+                            <Image
+                                shadow="sm"
+                                className=" object-scale-down h-[150px]"
+                                src={playlist.images[0].url}
+                            />
+                        </CardBody>
+                    </Card>
                 ))}
-            </CheckboxGroup>
-            <Button onClick={handleSubmit} className="mt-4">
-                Submit
-            </Button>
+            </div>
+
+            <div className={`fixed bottom-8 z-50 left-1/2 transform -translate-x-1/2`}>
+                <Button
+                    onClick={handleSubmit}
+                    className="hover:bg-blue-500 justify-center items-center mt-4 text-white py-3 px-8 rounded-lg text-2xl shadow-lg font-bold "
+                >
+                    {headers.functionType.toUpperCase()}
+                </Button>
+            </div>
         </div>
     );
 }

@@ -1,6 +1,7 @@
 import { decrypt, updateTokens, getRefreshToken } from "@/lib";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { Playlist } from "./types";
 
 export async function getAccessToken() {
     const encrypted_access_token = await cookies().get("access_token")?.value;
@@ -25,12 +26,18 @@ export async function getPlaylists(access_token: string) {
             console.log(data);
             throw new Error("Spotify API returned null object.");
         }
-        const playlists = spotifyPlaylistObjects.map((playlistObject: any) => ({
+        let playlists = spotifyPlaylistObjects.map((playlistObject: any) => ({
             id: playlistObject.id,
             name: playlistObject.name,
             public: playlistObject.public,
+            images: playlistObject.images,
             // add more if needed
         }));
+        playlists = playlists.filter(
+            (playlist: Playlist) =>
+                playlist.images[0].url !==
+                "https://lexicon-assets.spotifycdn.com/DJ-Beta-CoverArt-300.jpg"
+        );
         return playlists;
     } catch (error) {
         console.error("Error fetching playlists: ", error);
