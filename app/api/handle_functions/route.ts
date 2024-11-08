@@ -1,8 +1,10 @@
 "use server";
+
 import { NextResponse } from "next/server";
 import { getAccessToken } from "@/utils/getData";
 import mergePlaylists from "@/utils/functions/merge";
 import cleanPlaylist from "@/utils/functions/clean";
+import sortPlaylist from "@/utils/functions/sort";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!;
 const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI!;
@@ -10,7 +12,8 @@ const TOKEN_URL = process.env.SPOTIFY_TOKEN_URL!;
 
 export async function POST(request: Request) {
     try {
-        const { selectedPlaylists, functionType } = await request.json();
+        const { selectedPlaylists, selectedCriteria, functionType } =
+            await request.json();
         const playlists = selectedPlaylists.map((playlist: string) =>
             JSON.parse(playlist)
         );
@@ -27,6 +30,10 @@ export async function POST(request: Request) {
                 break;
             case "clean":
                 await cleanPlaylist(playlists, headers);
+                break;
+
+            case "sort":
+                await sortPlaylist(playlists, selectedCriteria, headers);
                 break;
             default:
                 console.log("Error: wrong function type inputted");

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Checkbox, CheckboxGroup, Button } from "@nextui-org/react";
+import { Checkbox, CheckboxGroup, Button, select } from "@nextui-org/react";
 import { Card, CardBody, CardFooter, Image } from "@nextui-org/react";
 import { Playlist } from "@/utils/types";
 import { toast } from "sonner";
+import CriteriaSelect from "./CriteriaSelect";
 
 type PlaylistCheckboxProps = {
     playlists: Playlist[];
@@ -16,6 +17,7 @@ type PlaylistCheckboxProps = {
 
 export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckboxProps) {
     const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
+    const [selectedCriteria, setSelectedCriteria] = useState("");
 
     const handleCardPress = async (playlist: Playlist) => {
         const playlistData = JSON.stringify({
@@ -23,7 +25,22 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
             name: playlist.name,
         });
 
-        if (selectedPlaylists.includes(playlistData)) {
+        const contains = selectedPlaylists.includes(playlistData);
+
+        if (selectedPlaylists.length === headers.maxSelections) {
+            if (contains) {
+                await setSelectedPlaylists(
+                    selectedPlaylists.filter((p) => p !== playlistData)
+                );
+            } else {
+                toast.error(
+                    `Too many selections. You can only select up to ${headers.maxSelections} playlists.`
+                );
+            }
+            return;
+        }
+
+        if (contains) {
             await setSelectedPlaylists(
                 selectedPlaylists.filter((p) => p !== playlistData)
             );
@@ -50,6 +67,7 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
                 },
                 body: JSON.stringify({
                     selectedPlaylists,
+                    selectedCriteria,
                     functionType: headers.functionType,
                 }),
             });
@@ -72,6 +90,12 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
 
     return (
         <div>
+            {headers.functionType === "sort" && (
+                <CriteriaSelect
+                    selected={selectedCriteria}
+                    setSelected={setSelectedCriteria}
+                />
+            )}
             <div className="gap-2 grid grid-cols-6">
                 {playlists.map((playlist: Playlist) => (
                     <Card
