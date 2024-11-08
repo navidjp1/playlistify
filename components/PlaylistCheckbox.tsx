@@ -43,7 +43,7 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
             return;
         }
         try {
-            const response = await fetch("http://localhost:3000/api/handle_functions", {
+            const response = await fetch("/api/handle_functions", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
