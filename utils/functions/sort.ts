@@ -54,7 +54,10 @@ export default async function sortPlaylist(
         }
     }
 
-    // to implement: add more sorting criteria
+    // to implement:
+    // * add more sorting criteria
+    // * group together (by album)
+    // * sub sorting (alphabetical, reversed, frequency, etc.)
     tracks.sort((a, b) => {
         switch (selectedCriteria) {
             case "artist":

@@ -25,8 +25,8 @@ export default function Callback() {
                     // redirect to error page.
                 } else {
                     window.localStorage.removeItem("code_verifier");
-                    // window.location.href = "http://localhost:3000/";
-                    window.location.href = "https://playlistify-omega.vercel.app/";
+                    window.location.href = "http://localhost:3000/";
+                    // window.location.href = "https://playlistify-omega.vercel.app/";
                 }
             } catch (err) {
                 console.error("Error exchanging code for token: ", err);
@@ -48,46 +48,3 @@ export default function Callback() {
         </div>
     );
 }
-
-// "use server";
-// import { redirect } from "next/navigation";
-// import { cookies } from "next/headers";
-// import { getCodeVerifier } from "@/lib";
-// import axios from "axios";
-
-// async function handleCallback(searchParams: any) {
-//     const code = searchParams?.code;
-//     const error = searchParams?.error;
-
-//     if (code) {
-//         // Code exists, exchange it for an access token
-//         try {
-//             const codeVerifier = cookies().get("codeVerifier")?.value;
-
-//             const res = await fetch("http://localhost:3000/api/set_tokens", {
-//                 method: "POST",
-//                 body: JSON.stringify({ code, codeVerifier }),
-//             });
-//             console.log(await res.json());
-//         } catch (err) {
-//             console.error("Error exchanging code for token: ", err);
-//         }
-//     } else if (error) {
-//         console.error("Error during authorization: ", error);
-//     }
-//     redirect("/");
-// }
-
-// export default async function Callback({
-//     searchParams,
-// }: {
-//     searchParams?: { [key: string]: string | string[] | undefined };
-// }) {
-//     await handleCallback(searchParams);
-
-//     return (
-//         <div className="flex flex-col items-center justify-center min-h-screen py-2">
-//             <h1 className="text-4xl font-bold">Processing authorization...</h1>
-//         </div>
-//     );
-// }
