@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Checkbox, CheckboxGroup, Button, select } from "@nextui-org/react";
-import { Card, CardBody, CardFooter, Image } from "@nextui-org/react";
+import { Checkbox, CheckboxGroup, Button, select } from "@heroui/react";
+import { Card, CardBody, CardFooter, Image } from "@heroui/react";
 import { Playlist } from "@/utils/types";
 import { toast } from "sonner";
 import CriteriaSelect from "./CriteriaSelect";
+import LinkInput from "./LinkInput";
 
 type PlaylistCheckboxProps = {
     playlists: Playlist[];
@@ -18,6 +19,7 @@ type PlaylistCheckboxProps = {
 export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckboxProps) {
     const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
     const [selectedCriteria, setSelectedCriteria] = useState("");
+    const [playlistLink, setPlaylistLink] = useState("");
 
     const handleCardPress = async (playlist: Playlist) => {
         const playlistData = JSON.stringify({
@@ -96,6 +98,9 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
                     setSelected={setSelectedCriteria}
                 />
             )}
+            {headers.functionType === "split" && (
+                <LinkInput selected={playlistLink} setSelected={setPlaylistLink} />
+            )}
             <div className="gap-2 grid grid-cols-6">
                 {playlists.map((playlist: Playlist) => (
                     <Card
@@ -130,7 +135,7 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
 
             <div className={`fixed bottom-8 z-50 left-1/2 transform -translate-x-1/2`}>
                 <Button
-                    onClick={handleSubmit}
+                    onPress={handleSubmit}
                     className="hover:bg-blue-500 justify-center items-center mt-4 text-white py-3 px-8 rounded-lg text-2xl shadow-lg font-bold "
                 >
                     {headers.functionType.toUpperCase()}

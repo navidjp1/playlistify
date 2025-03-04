@@ -1,14 +1,14 @@
 "use client";
 
-import { Card, CardBody, CardFooter, Image } from "@nextui-org/react";
+import { Card, CardBody, CardFooter, Image } from "@heroui/react";
 
 const pages = [
-    {
-        title: "Merge",
-        // img: "/images/fruit-1.jpeg",
-        href: "/functions/merge",
-        description: "Merge your different playlists",
-    },
+    // {
+    //     title: "Merge",
+    //     // img: "/images/fruit-1.jpeg",
+    //     href: "/functions/merge",
+    //     description: "Merge your different playlists",
+    // },
     {
         title: "Clean",
         // img: "/images/fruit-2.jpeg",
@@ -34,10 +34,16 @@ const pages = [
         description: "Create playlists based on your interests",
     },
     {
-        title: "Coming soon...",
+        title: "Transitions",
         // img: "/images/fruit-6.jpeg",
-        href: "/",
-        description: "...",
+        href: "/functions/transitions",
+        description: "Create playlists with song transitions",
+    },
+    {
+        title: "Random",
+        // img: "/images/fruit-6.jpeg",
+        href: "/functions/random",
+        description: "Generate random songs or playlists",
     },
 ];
 function FunctionCards() {

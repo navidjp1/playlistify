@@ -1,4 +1,4 @@
-import { CircularProgress } from "@nextui-org/progress";
+import { CircularProgress } from "@heroui/progress";
 
 // Show a loading indicator while the user data is being fetched
 export default function LoadingPage() {

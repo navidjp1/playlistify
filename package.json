@@ -9,11 +9,17 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "@heroui/card": "^2.2.14",
+        "@heroui/progress": "^2.2.11",
+        "@heroui/radio": "^2.3.14",
+        "@heroui/react": "^2.7.4",
+        "@heroui/system": "^2.4.11",
+        "@heroui/theme": "^2.4.11",
         "@nextui-org/react": "^2.4.6",
         "axios": "^1.7.2",
         "cookies-next": "^4.2.1",
         "dotenv": "^16.4.5",
-        "framer-motion": "^11.3.8",
+        "framer-motion": "^11.18.2",
         "next": "^14.2.15",
         "next-auth": "^4.24.8",
         "react": "^18",
