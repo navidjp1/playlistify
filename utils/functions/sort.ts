@@ -20,6 +20,43 @@ type Track = {
     genres?: string[];
 };
 
+// Add retry logic for API calls
+async function retryFetch(
+    url: string,
+    options: RequestInit,
+    maxRetries = 3,
+    initialDelay = 1000
+): Promise<Response> {
+    let lastError;
+    let delay = initialDelay;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const response = await fetch(url, options);
+
+            // If we get a rate limit error, wait and retry
+            if (response.status === 429) {
+                // Get retry-after header or use exponential backoff
+                const retryAfter =
+                    parseInt(response.headers.get("retry-after") || "0") * 1000 || delay;
+                console.log(`Rate limited. Retrying after ${retryAfter}ms...`);
+                await new Promise((resolve) => setTimeout(resolve, retryAfter));
+                delay *= 2; // Exponential backoff
+                continue;
+            }
+
+            return response;
+        } catch (error) {
+            lastError = error;
+            console.error(`Attempt ${attempt + 1} failed:`, error);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+        }
+    }
+
+    throw lastError || new Error(`Failed after ${maxRetries} attempts`);
+}
+
 export default async function sortPlaylist(
     playlists: Playlist[],
     selectedCriteria: string,
@@ -63,41 +100,37 @@ async function getAllTracks(playlistId: string, headers: Headers): Promise<Track
     let url = `${API_BASE_URL}/playlists/${playlistId}/tracks?limit=${limit}&offset=${offset}`;
 
     while (url) {
-        try {
-            const response = await fetch(url, { method: "GET", headers });
+        const response = await retryFetch(url, { headers });
 
-            if (!response.ok) {
-                throw new Error("Failed to fetch tracks from playlist");
-            }
-
-            const data = await response.json();
-            const playlistData: any[] = data.items;
-
-            if (!playlistData) {
-                throw new Error("Spotify API returned null object.");
-            }
-
-            playlistData.forEach((item) => {
-                const trackData = item.track;
-                if (!trackData) return; // Skip null tracks
-
-                const track: Track = {
-                    uri: trackData.uri,
-                    explicit: trackData.explicit,
-                    is_local: trackData.is_local,
-                    name: trackData.name,
-                    artist: trackData.artists[0]?.name || "Unknown Artist",
-                    album: trackData.album?.name,
-                    popularity: trackData.popularity,
-                    release_date: trackData.album?.release_date,
-                };
-                tracks.push(track);
-            });
-
-            url = data.next;
-        } catch (error) {
-            console.error("Error obtaining playlist data: ", error);
+        if (!response.ok) {
             throw new Error("Failed to fetch tracks from playlist");
+        }
+
+        const data = await response.json();
+
+        // Extract track information
+        for (const item of data.items) {
+            if (!item.track) continue;
+
+            const trackData = item.track;
+            const track: Track = {
+                uri: trackData.uri,
+                explicit: trackData.explicit,
+                is_local: trackData.is_local,
+                name: trackData.name,
+                artist: trackData.artists[0]?.id || "Unknown Artist",
+                album: trackData.album?.name,
+                popularity: trackData.popularity,
+                release_date: trackData.album?.release_date,
+            };
+            tracks.push(track);
+        }
+
+        // Check if there are more tracks to fetch
+        if (data.next) {
+            url = data.next;
+        } else {
+            break;
         }
     }
 
@@ -204,7 +237,7 @@ async function createNewPlaylist(
     options: PlaylistOptions
 ): Promise<any> {
     // Get user ID
-    const userResponse = await fetch(`${API_BASE_URL}/me`, { headers });
+    const userResponse = await retryFetch(`${API_BASE_URL}/me`, { headers });
 
     if (!userResponse.ok) {
         throw new Error("Failed to fetch user information");
@@ -228,7 +261,7 @@ async function createNewPlaylist(
         ? `${options.name} (Sorted by ${criteriaDisplay})`
         : `${originalPlaylistName} (Sorted by ${criteriaDisplay})`;
 
-    const createResponse = await fetch(`${API_BASE_URL}/users/${userId}/playlists`, {
+    const createResponse = await retryFetch(`${API_BASE_URL}/users/${userId}/playlists`, {
         method: "POST",
         headers: {
             ...headers,
@@ -275,21 +308,29 @@ async function addTracksToPlaylist(
     for (let i = 0; i < trackUris.length; i += limit) {
         const batch = trackUris.slice(i, i + limit);
 
-        const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/tracks`, {
-            method: "POST",
-            headers: {
-                ...headers,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                uris: batch,
-            }),
-        });
+        const response = await retryFetch(
+            `${API_BASE_URL}/playlists/${playlistId}/tracks`,
+            {
+                method: "POST",
+                headers: {
+                    ...headers,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    uris: batch,
+                }),
+            }
+        );
 
         if (!response.ok) {
             const errorData = await response.json();
             console.error("Error adding tracks to playlist:", errorData);
             throw new Error(`Failed to add tracks batch starting at index ${i}`);
+        }
+
+        // Add a small delay between batch requests
+        if (i + limit < trackUris.length) {
+            await new Promise((resolve) => setTimeout(resolve, 300));
         }
     }
 }

@@ -260,8 +260,13 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
                                     }`}
                                     onPress={() => handleCardPress(playlist)}
                                 >
-                                    <CardFooter className="text-medium justify-center">
-                                        <b>{playlist.name}</b>
+                                    <CardFooter
+                                        className="text-small justify-center overflow-hidden"
+                                        style={{ maxWidth: "200px" }}
+                                    >
+                                        <div className="truncate text-center w-full">
+                                            <b>{playlist.name}</b>
+                                        </div>
                                     </CardFooter>
                                     <CardBody className="">
                                         <Image

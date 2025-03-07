@@ -1,5 +1,42 @@
 import { Playlist, PlaylistOptions } from "@/utils/types";
 
+// Add retry logic for API calls
+async function retryFetch(
+    url: string,
+    options: RequestInit,
+    maxRetries = 3,
+    initialDelay = 1000
+): Promise<Response> {
+    let lastError;
+    let delay = initialDelay;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const response = await fetch(url, options);
+
+            // If we get a rate limit error, wait and retry
+            if (response.status === 429) {
+                // Get retry-after header or use exponential backoff
+                const retryAfter =
+                    parseInt(response.headers.get("retry-after") || "0") * 1000 || delay;
+                console.log(`Rate limited. Retrying after ${retryAfter}ms...`);
+                await new Promise((resolve) => setTimeout(resolve, retryAfter));
+                delay *= 2; // Exponential backoff
+                continue;
+            }
+
+            return response;
+        } catch (error) {
+            lastError = error;
+            console.error(`Attempt ${attempt + 1} failed:`, error);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+        }
+    }
+
+    throw lastError || new Error(`Failed after ${maxRetries} attempts`);
+}
+
 async function splitPlaylist(
     playlists: { id: string; name: string }[],
     criteria: string,
@@ -34,7 +71,7 @@ async function splitPlaylist(
 
     return {
         originalPlaylist: playlistName,
-        splitCount: Object.keys(groupedTracks).length,
+        splitCount: results.length,
         newPlaylists: results,
     };
 }
@@ -44,7 +81,7 @@ async function getAllTracks(playlistId: string, headers: { Authorization: string
     let nextUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`;
 
     while (nextUrl) {
-        const response = await fetch(nextUrl, { headers });
+        const response = await retryFetch(nextUrl, { headers });
 
         if (!response.ok) {
             throw new Error("Failed to fetch tracks from playlist");
@@ -176,7 +213,7 @@ async function createPlaylistsFromGroups(
     options: PlaylistOptions
 ) {
     // Get user ID
-    const userResponse = await fetch("https://api.spotify.com/v1/me", { headers });
+    const userResponse = await retryFetch("https://api.spotify.com/v1/me", { headers });
 
     if (!userResponse.ok) {
         throw new Error("Failed to fetch user information");
@@ -201,7 +238,7 @@ async function createPlaylistsFromGroups(
             ? `${options.name} - ${groupName}`
             : `${originalPlaylistName} - ${groupName}`;
 
-        const createResponse = await fetch(
+        const createResponse = await retryFetch(
             `https://api.spotify.com/v1/users/${userId}/playlists`,
             {
                 method: "POST",
@@ -235,7 +272,7 @@ async function createPlaylistsFromGroups(
         for (let i = 0; i < trackUris.length; i += 100) {
             const batch = trackUris.slice(i, i + 100);
 
-            const addResponse = await fetch(
+            const addResponse = await retryFetch(
                 `https://api.spotify.com/v1/playlists/${newPlaylist.id}/tracks`,
                 {
                     method: "POST",
@@ -251,6 +288,11 @@ async function createPlaylistsFromGroups(
 
             if (!addResponse.ok) {
                 throw new Error(`Failed to add tracks to playlist ${playlistName}`);
+            }
+
+            // Add a small delay between batch requests
+            if (i + 100 < trackUris.length) {
+                await new Promise((resolve) => setTimeout(resolve, 300));
             }
         }
 
