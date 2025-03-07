@@ -1,4 +1,4 @@
-import { Playlist } from "../types";
+import { Playlist, PlaylistOptions } from "../types";
 
 const API_BASE_URL = "https://api.spotify.com/v1";
 
@@ -15,7 +15,11 @@ type Track = {
     artist: string;
 };
 
-export default async function cleanPlaylist(playlists: Playlist[], headers: Headers) {
+export default async function cleanPlaylist(
+    playlists: Playlist[],
+    headers: Headers,
+    options: PlaylistOptions = {}
+) {
     const playlist = playlists[0];
     const tracks: Track[] = [];
 

@@ -25,3 +25,9 @@ export type ImageObject = {
     height: number;
     width: number;
 };
+
+export type PlaylistOptions = {
+    name?: string;
+    public?: boolean;
+    shuffle?: boolean;
+};

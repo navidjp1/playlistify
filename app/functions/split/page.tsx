@@ -10,7 +10,7 @@ export default async function Sort() {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen py-8">
             <h1 className="text-4xl font-bold">Split Playlists</h1>
-            <h3 className="text-xl italic pt-4">Select a playlist to split up</h3>
+            <h3 className="text-xl italic pt-4">Select a playlist to split</h3>
             <br />
             {playlists ? (
                 <PlaylistCheckbox playlists={playlists} headers={headers} />

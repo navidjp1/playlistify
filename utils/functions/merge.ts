@@ -1,4 +1,4 @@
-import { Playlist } from "../types";
+import { Playlist, PlaylistOptions } from "../types";
 
 const API_BASE_URL = "https://api.spotify.com/v1";
 
@@ -7,7 +7,11 @@ type Headers = {
     "Content-Type"?: string;
 };
 
-export default async function mergePlaylists(playlists: Playlist[], headers: Headers) {
+export default async function mergePlaylists(
+    playlists: Playlist[],
+    headers: Headers,
+    options: PlaylistOptions = {}
+) {
     const songURIs: string[] = [];
 
     for (const playlist of playlists) {

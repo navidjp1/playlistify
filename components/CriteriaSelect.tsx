@@ -12,7 +12,7 @@ export default function CriteriaSelect({
             <RadioGroup
                 label="Sort by..."
                 orientation="horizontal"
-                className="items-center pt-4 pb-6"
+                className="items-center pb-16"
                 value={selected}
                 onValueChange={setSelected}
             >

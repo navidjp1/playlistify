@@ -1,5 +1,5 @@
 import { select } from "@nextui-org/react";
-import { Playlist } from "../types";
+import { Playlist, PlaylistOptions } from "@/utils/types";
 
 const API_BASE_URL = "https://api.spotify.com/v1";
 
@@ -19,7 +19,8 @@ type Track = {
 export default async function sortPlaylist(
     playlists: Playlist[],
     selectedCriteria: string,
-    headers: Headers
+    headers: Headers,
+    options: PlaylistOptions = {}
 ) {
     const playlist = playlists[0];
     const tracks: Track[] = [];

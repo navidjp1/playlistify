@@ -1,7 +1,7 @@
 import React from "react";
 import { Input } from "@heroui/react";
 
-export default function CriteriaSelect({
+export default function LinkInput({
     selected,
     setSelected,
 }: {
@@ -16,7 +16,7 @@ export default function CriteriaSelect({
                 onValueChange={setSelected}
                 placeholder="Paste in the playlist link"
                 type="link"
-                className="items-center pb-6 align-middle ml-32 mr-32"
+                className="items-center pb-6"
             />
         </div>
         // <div>
