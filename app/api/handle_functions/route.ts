@@ -6,6 +6,10 @@ import cleanPlaylist from "@/utils/functions/clean";
 import sortPlaylist from "@/utils/functions/sort";
 import splitPlaylist from "@/utils/functions/split";
 
+export const config = {
+    runtime: "edge",
+};
+
 export async function POST(request: Request) {
     try {
         const {
@@ -48,28 +52,51 @@ export async function POST(request: Request) {
 
         let result;
 
-        switch (functionType) {
-            case "clean":
-                result = await cleanPlaylist(playlists, headers, playlistOptions);
-                break;
-            case "sort":
-                result = await sortPlaylist(
-                    playlists,
-                    selectedCriteria,
-                    headers,
-                    playlistOptions
-                );
-                break;
-            case "split":
-                result = await splitPlaylist(
-                    playlists,
-                    selectedCriteria,
-                    headers,
-                    playlistOptions
-                );
-                break;
-            default:
-                throw new Error("Invalid function type");
+        // For clean function with large playlists, we need special handling
+        if (functionType === "clean") {
+            // Get playlist track count first to check if it's large
+            const playlist = playlists[0];
+            const countResponse = await fetch(
+                `https://api.spotify.com/v1/playlists/${playlist.id}?fields=tracks(total)`,
+                { headers }
+            );
+
+            if (!countResponse.ok) {
+                throw new Error("Failed to fetch playlist information");
+            }
+
+            const {
+                tracks: { total },
+            } = await countResponse.json();
+
+            // If the playlist is very large, warn the user
+            if (total > 100) {
+                console.log(`Processing large playlist with ${total} tracks`);
+            }
+
+            result = await cleanPlaylist(playlists, headers, playlistOptions);
+        } else {
+            // Handle other functions normally
+            switch (functionType) {
+                case "sort":
+                    result = await sortPlaylist(
+                        playlists,
+                        selectedCriteria,
+                        headers,
+                        playlistOptions
+                    );
+                    break;
+                case "split":
+                    result = await splitPlaylist(
+                        playlists,
+                        selectedCriteria,
+                        headers,
+                        playlistOptions
+                    );
+                    break;
+                default:
+                    throw new Error("Invalid function type");
+            }
         }
 
         return NextResponse.json({

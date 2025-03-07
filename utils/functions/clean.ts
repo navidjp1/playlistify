@@ -109,6 +109,10 @@ async function retryFetch(
     throw lastError || new Error(`Failed after ${maxRetries} attempts`);
 }
 
+// Add this near the top of the file
+const BATCH_SIZE = 3; // Reduce batch size for processing
+const CACHE_EXPIRY = 3600000; // Cache expiry time (1 hour)
+
 export default async function cleanPlaylist(
     playlists: Playlist[],
     headers: Headers,
@@ -190,41 +194,68 @@ async function getAllTracks(playlistId: string, headers: Headers): Promise<Track
     return tracks;
 }
 
+// Modify the getCleanSongs function to be more efficient
 async function getCleanSongs(tracks: Track[], headers: Headers): Promise<string[]> {
-    // Create a map to cache clean versions to avoid duplicate API calls
-    const cleanVersionCache: Map<string, string | null> = new Map();
-    const cleanedTracks: string[] = [];
+    const explicitTracks = tracks.filter((track) => track.explicit);
+    const cleanedTracks = tracks
+        .filter((track) => !track.explicit)
+        .map((track) => track.uri);
 
-    // Process tracks in smaller batches to avoid rate limiting
-    const batchSize = 5; // Reduced batch size
+    console.log(
+        `Processing ${explicitTracks.length} explicit tracks out of ${tracks.length} total`
+    );
 
-    for (let i = 0; i < tracks.length; i += batchSize) {
-        const batch = tracks.slice(i, i + batchSize);
+    // If there are no explicit tracks, return all tracks
+    if (explicitTracks.length === 0) {
+        return tracks.map((track) => track.uri);
+    }
+
+    // Use a more persistent cache with expiry
+    const cleanVersionCache = new Map<string, { uri: string | null; expires: number }>();
+
+    // Process in smaller batches with progressive delays
+    const batchSize = BATCH_SIZE;
+    let processedCount = 0;
+
+    for (let i = 0; i < explicitTracks.length; i += batchSize) {
+        const batch = explicitTracks.slice(
+            i,
+            Math.min(i + batchSize, explicitTracks.length)
+        );
+        processedCount += batch.length;
+
+        console.log(
+            `Processing batch ${i / batchSize + 1}/${Math.ceil(
+                explicitTracks.length / batchSize
+            )} (${processedCount}/${explicitTracks.length})`
+        );
+
         const promises = batch.map(async (song) => {
-            if (song.is_local) {
-                return null; // Skip local tracks
-            }
-
-            if (!song.explicit) {
-                return song.uri; // Already clean
-            }
+            const cacheKey = `${song.name}:${song.artist}`;
 
             // Check cache first
-            const cacheKey = `${song.name}-${song.artist}`;
-            if (cleanVersionCache.has(cacheKey)) {
-                return cleanVersionCache.get(cacheKey);
+            const cached = cleanVersionCache.get(cacheKey);
+            if (cached && cached.expires > Date.now()) {
+                return cached.uri;
             }
 
             // Find clean version with rate limiting
-            return rateLimiter.enqueue(async () => {
-                const cleanVersion = await findCleanVersion(
-                    song.name,
-                    song.artist,
-                    headers
-                );
-                cleanVersionCache.set(cacheKey, cleanVersion);
+            try {
+                const cleanVersion = await rateLimiter.enqueue(async () => {
+                    return await findCleanVersion(song.name, song.artist, headers);
+                });
+
+                // Store in cache with expiry
+                cleanVersionCache.set(cacheKey, {
+                    uri: cleanVersion,
+                    expires: Date.now() + CACHE_EXPIRY,
+                });
+
                 return cleanVersion;
-            });
+            } catch (error) {
+                console.error(`Error finding clean version for ${song.name}:`, error);
+                return null;
+            }
         });
 
         const results = await Promise.all(promises);
@@ -232,9 +263,15 @@ async function getCleanSongs(tracks: Track[], headers: Headers): Promise<string[
             if (uri) cleanedTracks.push(uri);
         });
 
-        // Add a delay between batches to avoid rate limiting
-        if (i + batchSize < tracks.length) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Add a progressive delay between batches to avoid rate limiting
+        // The delay increases as we process more batches
+        if (i + batchSize < explicitTracks.length) {
+            const progressiveDelay = Math.min(
+                2000,
+                500 + (i / explicitTracks.length) * 1500
+            );
+            console.log(`Waiting ${progressiveDelay}ms before next batch...`);
+            await new Promise((resolve) => setTimeout(resolve, progressiveDelay));
         }
     }
 
