@@ -6,5 +6,10 @@
         "app/api/handle_functions/route.ts": {
             "maxDuration": 60
         }
+    },
+    "git": {
+        "deploymentEnabled": {
+            "dev": false
+        }
     }
 }
