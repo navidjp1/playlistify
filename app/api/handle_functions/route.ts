@@ -1,12 +1,8 @@
-"use server";
-
 import { NextResponse } from "next/server";
 import { getAccessToken } from "@/utils/getData";
 import cleanPlaylist from "@/utils/functions/clean";
 import sortPlaylist from "@/utils/functions/sort";
 import splitPlaylist from "@/utils/functions/split";
-
-export const runtime = "edge";
 
 export async function POST(request: Request) {
     try {
