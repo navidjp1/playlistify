@@ -25,8 +25,8 @@ export default function Callback() {
                     // redirect to error page.
                 } else {
                     window.localStorage.removeItem("code_verifier");
-                    window.location.href = "http://localhost:3000/";
-                    // window.location.href = "https://playlistify-omega.vercel.app/";
+                    // window.location.href = "http://localhost:3000/";
+                    window.location.href = "https://playlistify-omega.vercel.app/";
                 }
             } catch (err) {
                 console.error("Error exchanging code for token: ", err);
