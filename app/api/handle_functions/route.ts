@@ -6,10 +6,6 @@ import cleanPlaylist from "@/utils/functions/clean";
 import sortPlaylist from "@/utils/functions/sort";
 import splitPlaylist from "@/utils/functions/split";
 
-const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!;
-const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI!;
-const TOKEN_URL = process.env.SPOTIFY_TOKEN_URL!;
-
 export async function POST(request: Request) {
     try {
         const {
