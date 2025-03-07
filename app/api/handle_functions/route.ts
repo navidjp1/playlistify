@@ -6,9 +6,7 @@ import cleanPlaylist from "@/utils/functions/clean";
 import sortPlaylist from "@/utils/functions/sort";
 import splitPlaylist from "@/utils/functions/split";
 
-export const config = {
-    runtime: "edge",
-};
+export const runtime = "edge";
 
 export async function POST(request: Request) {
     try {
