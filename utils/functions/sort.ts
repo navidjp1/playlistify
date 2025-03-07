@@ -14,6 +14,10 @@ type Track = {
     is_local: boolean;
     name: string;
     artist: string;
+    album?: string;
+    popularity?: number;
+    release_date?: string;
+    genres?: string[];
 };
 
 export default async function sortPlaylist(
@@ -22,112 +26,280 @@ export default async function sortPlaylist(
     headers: Headers,
     options: PlaylistOptions = {}
 ) {
+    if (playlists.length === 0) {
+        throw new Error("No playlists selected");
+    }
+
     const playlist = playlists[0];
+    const tracks = await getAllTracks(playlist.id, headers);
+
+    if (tracks.length === 0) {
+        throw new Error("No tracks found in the playlist");
+    }
+
+    // Enrich tracks with additional data if needed for certain criteria
+    const enrichedTracks = await enrichTracksWithData(tracks, selectedCriteria, headers);
+
+    // Sort the tracks based on the selected criteria
+    const sortedTracks = sortTracksByCriteria(enrichedTracks, selectedCriteria);
+
+    // Create a new playlist with the sorted tracks
+    const result = await createNewPlaylist(
+        sortedTracks,
+        playlist.name,
+        selectedCriteria,
+        headers,
+        options
+    );
+
+    return result;
+}
+
+async function getAllTracks(playlistId: string, headers: Headers): Promise<Track[]> {
     const tracks: Track[] = [];
 
     let offset = 0;
     const limit = 100;
-    let url = `${API_BASE_URL}/playlists/${playlist.id}/tracks?limit=${limit}&offset=${offset}`;
+    let url = `${API_BASE_URL}/playlists/${playlistId}/tracks?limit=${limit}&offset=${offset}`;
+
     while (url) {
         try {
             const response = await fetch(url, { method: "GET", headers });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch tracks from playlist");
+            }
+
             const data = await response.json();
             const playlistData: any[] = data.items;
+
             if (!playlistData) {
-                console.log(data);
                 throw new Error("Spotify API returned null object.");
             }
+
             playlistData.forEach((item) => {
                 const trackData = item.track;
-                const track = {
+                if (!trackData) return; // Skip null tracks
+
+                const track: Track = {
                     uri: trackData.uri,
                     explicit: trackData.explicit,
                     is_local: trackData.is_local,
                     name: trackData.name,
-                    artist: trackData.artists[0].name,
+                    artist: trackData.artists[0]?.name || "Unknown Artist",
+                    album: trackData.album?.name,
+                    popularity: trackData.popularity,
+                    release_date: trackData.album?.release_date,
                 };
                 tracks.push(track);
             });
+
             url = data.next;
         } catch (error) {
             console.error("Error obtaining playlist data: ", error);
-            return;
+            throw new Error("Failed to fetch tracks from playlist");
         }
     }
 
-    // to implement:
-    // * add more sorting criteria
-    // * group together (by album)
-    // * sub sorting (alphabetical, reversed, frequency, etc.)
-    tracks.sort((a, b) => {
-        switch (selectedCriteria) {
-            case "artist":
-                return a.artist.localeCompare(b.artist); // Sort alphabetically by artist name
-
-            default:
-                console.error("Unknown sorting criteria:", selectedCriteria);
-                return 0;
-        }
-    });
-
-    // prettier-ignore
-    const body = JSON.stringify({
-        "name": `${playlist.name} (Sorted by ${selectedCriteria})`,
-        "description": "Sorted with Playlistify",
-        "public": false,
-    });
-
-    const trackURIs = tracks.map((track) => track.uri);
-
-    // prettier-ignore
-    const newBody = JSON.stringify({
-        "uris": trackURIs,
-        "position": 0,
-    });
-
-    headers["Content-Type"] = "application/json";
-
-    try {
-        const request = await fetch(`${API_BASE_URL}/me/playlists`, {
-            method: "POST",
-            headers,
-            body,
-        });
-        const createdPlaylist = await request.json();
-        const newPlaylistID = createdPlaylist.id;
-        const url = `${API_BASE_URL}/playlists/${newPlaylistID}/tracks`;
-
-        if (trackURIs.length > 100) {
-            await handleLargePlaylists(trackURIs, url, headers);
-        } else {
-            const req = await fetch(url, { method: "POST", headers, body: newBody });
-
-            const res = await req.json();
-            if (res.error) {
-                console.log(res.error);
-                throw new Error("Spotify API returned error.");
-            }
-        }
-    } catch (error) {
-        console.error("Error sorting playlists: ", error);
-        return;
-    }
-    console.log("Successfully sorted playlists!");
+    return tracks;
 }
 
-async function handleLargePlaylists(songURIs: string[], url: string, headers: Headers) {
+async function enrichTracksWithData(
+    tracks: Track[],
+    criteria: string,
+    headers: Headers
+): Promise<Track[]> {
+    // For some criteria, we need to fetch additional data
+    if (criteria === "genre") {
+        // Fetch genre information for each track's artist
+        const artistIds = new Set(
+            tracks
+                .map((track) => (track.artist !== "Unknown Artist" ? track.artist : null))
+                .filter(Boolean)
+        );
+
+        const artistGenres: Record<string, string[]> = {};
+
+        // Batch artist requests to avoid rate limiting
+        const batchSize = 50;
+        const artistIdArray = Array.from(artistIds);
+
+        for (let i = 0; i < artistIdArray.length; i += batchSize) {
+            const batch = artistIdArray.slice(i, i + batchSize);
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/artists?ids=${batch.join(",")}`,
+                    {
+                        headers,
+                    }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    data.artists.forEach((artist: any) => {
+                        artistGenres[artist.name] = artist.genres;
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching artist genres:", error);
+            }
+        }
+
+        // Add genre information to tracks
+        return tracks.map((track) => ({
+            ...track,
+            genres: artistGenres[track.artist] || [],
+        }));
+    }
+
+    return tracks;
+}
+
+function sortTracksByCriteria(tracks: Track[], criteria: string): Track[] {
+    const sortedTracks = [...tracks]; // Create a copy to avoid mutating the original
+
+    sortedTracks.sort((a, b) => {
+        switch (criteria) {
+            case "artist":
+                return a.artist.localeCompare(b.artist);
+
+            case "genre":
+                // Sort by primary genre if available
+                const genreA = a.genres && a.genres.length > 0 ? a.genres[0] : "Unknown";
+                const genreB = b.genres && b.genres.length > 0 ? b.genres[0] : "Unknown";
+                return genreA.localeCompare(genreB);
+
+            case "popularity":
+                // Sort by popularity (high to low)
+                return (b.popularity || 0) - (a.popularity || 0);
+
+            case "date":
+                // Sort by release date (newest first)
+                if (!a.release_date) return 1;
+                if (!b.release_date) return -1;
+                return (
+                    new Date(b.release_date).getTime() -
+                    new Date(a.release_date).getTime()
+                );
+
+            case "language":
+                // This is a simplified approach - we're using the artist name as a proxy
+                // for language, which isn't accurate but is a reasonable approximation
+                return a.artist.localeCompare(b.artist);
+
+            default:
+                // Default to sorting by name
+                return a.name.localeCompare(b.name);
+        }
+    });
+
+    return sortedTracks;
+}
+
+async function createNewPlaylist(
+    tracks: Track[],
+    originalPlaylistName: string,
+    criteria: string,
+    headers: Headers,
+    options: PlaylistOptions
+): Promise<any> {
+    // Get user ID
+    const userResponse = await fetch(`${API_BASE_URL}/me`, { headers });
+
+    if (!userResponse.ok) {
+        throw new Error("Failed to fetch user information");
+    }
+
+    const userData = await userResponse.json();
+    const userId = userData.id;
+
+    // Format the criteria for display
+    const criteriaDisplay =
+        {
+            artist: "Artist",
+            genre: "Genre",
+            popularity: "Popularity",
+            date: "Release Date",
+            language: "Language",
+        }[criteria] || criteria;
+
+    // Create a new playlist
+    const playlistName = options.name
+        ? `${options.name} (Sorted by ${criteriaDisplay})`
+        : `${originalPlaylistName} (Sorted by ${criteriaDisplay})`;
+
+    const createResponse = await fetch(`${API_BASE_URL}/users/${userId}/playlists`, {
+        method: "POST",
+        headers: {
+            ...headers,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            name: playlistName,
+            public: options.public !== undefined ? options.public : false,
+            description: `Sorted with Playlistify by ${criteriaDisplay}`,
+        }),
+    });
+
+    if (!createResponse.ok) {
+        throw new Error("Failed to create new playlist");
+    }
+
+    const newPlaylist = await createResponse.json();
+
+    // Extract track URIs
+    let trackUris = tracks.map((track) => track.uri);
+
+    // Shuffle if requested
+    if (options.shuffle) {
+        trackUris = shuffleArray(trackUris);
+    }
+
+    // Add tracks to the new playlist (in batches of 100)
+    await addTracksToPlaylist(trackUris, newPlaylist.id, headers);
+
+    return {
+        name: playlistName,
+        id: newPlaylist.id,
+        trackCount: tracks.length,
+    };
+}
+
+async function addTracksToPlaylist(
+    trackUris: string[],
+    playlistId: string,
+    headers: Headers
+) {
     const limit = 100;
-    for (let i = 0; i < songURIs.length; i += limit) {
-        const batch = songURIs.slice(i, i + limit);
 
-        // prettier-ignore
-        const body = JSON.stringify({ "uris": batch, "position": 0, });
+    for (let i = 0; i < trackUris.length; i += limit) {
+        const batch = trackUris.slice(i, i + limit);
 
-        const response = await fetch(url, { method: "POST", headers, body });
+        const response = await fetch(`${API_BASE_URL}/playlists/${playlistId}/tracks`, {
+            method: "POST",
+            headers: {
+                ...headers,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                uris: batch,
+            }),
+        });
 
         if (!response.ok) {
-            console.error("Error adding tracks to playlist: ", await response.json());
+            const errorData = await response.json();
+            console.error("Error adding tracks to playlist:", errorData);
             throw new Error(`Failed to add tracks batch starting at index ${i}`);
         }
     }
+}
+
+// Helper function to shuffle an array
+function shuffleArray<T>(array: T[]): T[] {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
 }

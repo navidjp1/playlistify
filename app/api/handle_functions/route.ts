@@ -2,7 +2,6 @@
 
 import { NextResponse } from "next/server";
 import { getAccessToken } from "@/utils/getData";
-import mergePlaylists from "@/utils/functions/merge";
 import cleanPlaylist from "@/utils/functions/clean";
 import sortPlaylist from "@/utils/functions/sort";
 import splitPlaylist from "@/utils/functions/split";
@@ -54,9 +53,6 @@ export async function POST(request: Request) {
         let result;
 
         switch (functionType) {
-            case "merge":
-                result = await mergePlaylists(playlists, headers, playlistOptions);
-                break;
             case "clean":
                 result = await cleanPlaylist(playlists, headers, playlistOptions);
                 break;

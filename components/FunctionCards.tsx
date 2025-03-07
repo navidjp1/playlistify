@@ -1,51 +1,34 @@
 "use client";
 
-import { Card, CardBody, CardFooter, Image } from "@heroui/react";
+import { Card, CardBody, CardFooter } from "@heroui/react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+    faBroom,
+    faSort,
+    faArrowsSplitUpAndLeft,
+} from "@fortawesome/free-solid-svg-icons";
 
 const pages = [
-    // {
-    //     title: "Merge",
-    //     // img: "/images/fruit-1.jpeg",
-    //     href: "/functions/merge",
-    //     description: "Merge your different playlists",
-    // },
     {
         title: "Clean",
-        // img: "/images/fruit-2.jpeg",
+        icon: faBroom,
         href: "/functions/clean",
-        description: "Replace/remove explicit songs",
+        description: "Replace explicit songs from playlists",
     },
     {
         title: "Sort",
-        // img: "/images/fruit-3.jpeg",
+        icon: faSort,
         href: "/functions/sort",
         description: "Sort playlists by different criteria",
     },
     {
         title: "Split",
-        // img: "/images/fruit-4.jpeg",
+        icon: faArrowsSplitUpAndLeft,
         href: "/functions/split",
-        description: "Split up a playlist into more than one",
-    },
-    {
-        title: "Generate",
-        // img: "/images/fruit-5.jpeg",
-        href: "/functions/generate",
-        description: "Create playlists based on your interests",
-    },
-    {
-        title: "Transitions",
-        // img: "/images/fruit-6.jpeg",
-        href: "/functions/transitions",
-        description: "Create playlists with song transitions",
-    },
-    {
-        title: "Random",
-        // img: "/images/fruit-6.jpeg",
-        href: "/functions/random",
-        description: "Generate random songs or playlists",
+        description: "Split up playlists based on criteria",
     },
 ];
+
 function FunctionCards() {
     return (
         <div className="gap-2 grid grid-cols-2 sm:grid-cols-3">
@@ -56,22 +39,29 @@ function FunctionCards() {
                     isPressable
                     onPress={() => (window.location.href = page.href)}
                 >
-                    <CardFooter
-                        className="text-m
-                    
-                    edium justify-center w-64"
-                    >
+                    <CardFooter className="text-medium justify-center w-64">
                         <b>{page.title}</b>
                     </CardFooter>
-                    <CardBody className="overflow-visible p-0">
-                        <Image
-                            shadow="sm"
-                            radius="lg"
-                            width="100%"
-                            alt={page.title}
-                            className="w-full object-cover h-[140px]"
-                            // src={item.img}
-                        />
+                    <CardBody className="overflow-visible p-0 flex justify-center items-center h-[140px]">
+                        <div
+                            style={{
+                                width: "60px",
+                                height: "60px",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                            }}
+                        >
+                            <FontAwesomeIcon
+                                icon={page.icon}
+                                style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    maxWidth: "60px",
+                                    maxHeight: "60px",
+                                }}
+                            />
+                        </div>
                     </CardBody>
                     <CardFooter className="text-tiny font-light justify-center w-64">
                         <b>{page.description}</b>

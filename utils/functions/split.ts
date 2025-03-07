@@ -187,10 +187,15 @@ async function createPlaylistsFromGroups(
 
     const results = [];
 
-    // Create a playlist for each group
-    for (const [groupName, tracks] of Object.entries(groups)) {
-        if (tracks.length === 0) continue;
+    // Filter out "Unknown Genre" and groups with fewer than 10 tracks
+    const filteredGroups = Object.entries(groups).filter(
+        ([groupName, tracks]) =>
+            !(groupName === "Unknown Genre" || groupName === "Unknown Language") &&
+            tracks.length >= 10
+    );
 
+    // Create a playlist for each group
+    for (const [groupName, tracks] of filteredGroups) {
         // Create new playlist
         const playlistName = options.name
             ? `${options.name} - ${groupName}`
@@ -254,6 +259,13 @@ async function createPlaylistsFromGroups(
             id: newPlaylist.id,
             trackCount: tracks.length,
         });
+    }
+
+    // If no playlists were created because all groups were filtered out
+    if (results.length === 0) {
+        throw new Error(
+            "No playlists were created. All groups had fewer than 10 tracks or were unknown categories."
+        );
     }
 
     return results;

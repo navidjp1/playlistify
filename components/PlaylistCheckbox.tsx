@@ -222,8 +222,19 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
 
     return (
         <div className="space-y-4">
-            {/* Section 1: Playlist Selection */}
-            <div className="p-6 rounded-lg">
+            {/* Section 1: Criteria Selection (only for sort and split) */}
+            {(headers.functionType === "sort" || headers.functionType === "split") && (
+                <div className="p-6 rounded-lg">
+                    <h2 className="text-xl font-bold mb-4">Select Criteria</h2>
+                    <CriteriaSelect
+                        selected={selectedCriteria}
+                        setSelected={setSelectedCriteria}
+                    />
+                </div>
+            )}
+
+            {/* Section 2: Playlist Selection */}
+            <div className="p-6 rounded-lg pb-32">
                 <h2 className="text-xl font-bold mb-4">Select Playlist</h2>
 
                 <Tabs
@@ -279,17 +290,6 @@ export default function PlaylistCheckbox({ playlists, headers }: PlaylistCheckbo
                     </Tab>
                 </Tabs>
             </div>
-
-            {/* Section 2: Criteria Selection (only for sort and split) */}
-            {(headers.functionType === "sort" || headers.functionType === "split") && (
-                <div className="p-6 rounded-lg">
-                    <h2 className="text-xl font-bold mb-4">Select Criteria</h2>
-                    <CriteriaSelect
-                        selected={selectedCriteria}
-                        setSelected={setSelectedCriteria}
-                    />
-                </div>
-            )}
 
             {/* Submit Button */}
             <div className="fixed bottom-8 z-50 left-1/2 transform -translate-x-1/2">

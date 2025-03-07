@@ -37,6 +37,28 @@ export default function ConfirmationModal({
     selectedPlaylistNames,
     functionType,
 }: ConfirmationModalProps) {
+    function placeholderPlaylistName(
+        selectedPlaylistNames: string[],
+        functionType: string
+    ): string {
+        let placeholder = "";
+        const ftype = {
+            clean: "(Cleaned by Playlistify)",
+            sort: "(Sorted by Playlistify)",
+            split: "(Split by Playlistify)",
+        };
+        if (selectedPlaylistNames.length === 1) {
+            placeholder = `${selectedPlaylistNames[0]} ${
+                ftype[functionType as keyof typeof ftype]
+            }`;
+        } else {
+            placeholder = `New Playlist ${ftype[functionType as keyof typeof ftype]}`;
+        }
+
+        setPlaylistName(placeholder);
+        return placeholder;
+    }
+
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <ModalContent>
@@ -58,7 +80,10 @@ export default function ConfirmationModal({
                     <div className="space-y-4">
                         <Input
                             label="New Playlist Name"
-                            placeholder="Enter a name for your new playlist"
+                            placeholder={placeholderPlaylistName(
+                                selectedPlaylistNames,
+                                functionType
+                            )}
                             value={playlistName}
                             onValueChange={setPlaylistName}
                         />
@@ -68,9 +93,11 @@ export default function ConfirmationModal({
                                 Make playlist public
                             </Checkbox>
 
-                            <Checkbox isSelected={shuffle} onValueChange={setShuffle}>
-                                Shuffle songs
-                            </Checkbox>
+                            {(functionType === "clean" || functionType === "split") && (
+                                <Checkbox isSelected={shuffle} onValueChange={setShuffle}>
+                                    Shuffle songs
+                                </Checkbox>
+                            )}
                         </div>
                     </div>
                 </ModalBody>

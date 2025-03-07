@@ -9,7 +9,8 @@ const Home: React.FC = async () => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen py-2">
-            <h1 className="text-4xl font-bold">Welcome</h1>
+            <h1 className="text-4xl font-bold">Playlistify</h1>
+            <h1 className="text-xl italic pt-4 pb-4">Modify your Spotify Playlists</h1>
             {isLoggedIn ? <LogoutButton /> : <LoginButton />}
 
             <br />

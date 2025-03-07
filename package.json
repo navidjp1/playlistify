@@ -9,6 +9,10 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "@fortawesome/fontawesome-free": "^6.7.2",
+        "@fortawesome/fontawesome-svg-core": "^6.7.2",
+        "@fortawesome/free-solid-svg-icons": "^6.7.2",
+        "@fortawesome/react-fontawesome": "^0.2.2",
         "@heroui/card": "^2.2.14",
         "@heroui/progress": "^2.2.11",
         "@heroui/radio": "^2.3.14",
